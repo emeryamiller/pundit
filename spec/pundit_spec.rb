@@ -3,7 +3,7 @@ require "pry"
 require "active_support/core_ext"
 require "active_model/naming"
 
-class PostPolicy < Struct.new(:user, :post)
+class PostPolicy < Struct.new(:user, :post, :account)
   def update?
     post.user == user
   end
@@ -57,10 +57,12 @@ end
 
 describe Pundit do
   let(:user) { double }
+  let(:account) { double }
   let(:post) { Post.new(user) }
   let(:comment) { Comment.new }
   let(:article) { Article.new }
   let(:controller) { double(:current_user => user, :params => { :action => "update" }).tap { |c| c.extend(Pundit) } }
+  let(:additional_controller) { double(:current_user => user, :pundit_additional_attributes => account, :params => { :action => "update" }).tap { |c| c.extend(Pundit) } }
   let(:artificial_blog) { ArtificialBlog.new }
   let(:article_tag) { ArticleTag.new }
 
@@ -245,6 +247,13 @@ describe Pundit do
       policy = controller.policy(post)
       expect(policy.user).to eq user
       expect(policy.post).to eq post
+    end
+
+    it "returns an instantiated policy, with additional properties" do
+      policy = additional_controller.policy(post)
+      expect(policy.user).to eq user
+      expect(policy.post).to eq post
+      expect(policy.account).to eq account
     end
 
     it "throws an exception if the given policy can't be found" do
